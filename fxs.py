@@ -110,7 +110,7 @@ def downloadYT(url):
     from pytube import YouTube
     from pytube.cli import on_progress
 
-    dl_location = "/Users/khallid/Documents/Videos"
+    dl_location = ""
 
     try:
         yt = YouTube(url, on_progress_callback = on_progress)
