@@ -14,10 +14,10 @@
 ##################################################################################################################################################
 
 import os
+import fxs
 import twilio
 import openai
 from pyngrok import ngrok
-from myImports import fxs
 from twilio.rest import Client
 from flask import Flask, request, redirect
 from twilio.twiml.messaging_response import MessagingResponse
