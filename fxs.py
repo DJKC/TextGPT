@@ -170,7 +170,7 @@ def get_config_key(_section_name = None, _secret_only = True, _key_name = None, 
         logger.setLevel(logging.DEBUG)
 
     config = configparser.ConfigParser()
-    config.read('')
+    config.read('/home/ec2-user/CONFIG_APIS.ini')
 
     sections = config.sections()
     section_name = _section_name
