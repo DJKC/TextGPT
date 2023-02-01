@@ -1,5 +1,7 @@
 # Makes a prompt request to Text_DaVinci-3 using Twilio, Ngrok and Flask
 
+##################################################################################################################################################
+# HELPFUL LINKS
 # https://console.twilio.com/us1/develop/phone-numbers/manage/incoming?frameUrl=%2Fconsole%2Fphone-numbers%2Fincoming%2FPN43550d505a24d5283e6b7b65f76b2333%3Fx-target-region%3Dus1
 # A message comes in, set webhook here, for individual phone numbers
 
@@ -9,6 +11,7 @@
 # https://www.toptal.com/developers/postbin/
 
 # https://dashboard.ngrok.com/
+##################################################################################################################################################
 
 import os
 import twilio
@@ -18,9 +21,6 @@ from myImports import fxs
 from twilio.rest import Client
 from flask import Flask, request, redirect
 from twilio.twiml.messaging_response import MessagingResponse
-
-# https://github.com/settings/personal-access-tokens/new
-# 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
 
 # OpenAI account information
 openai.api_key = fxs.get_config_key("OPENAI") # OpenAI API key
@@ -50,7 +50,12 @@ app = Flask(__name__)
 
 @app.route("/")
 def root():
-    print("Welcome!")
+    """
+    The function that will be called when the root directory is reached.
+
+    :param :
+    :return: A string containing text displaying the Ngrok tunnel url
+    """
 
     return f"LANDING! prints to browser @ {ngrok_tunnel_url}"
 
@@ -58,6 +63,13 @@ def root():
 # go to sms to see this function at work
 @app.route("/sms")
 def sms():
+    """
+    The function that will be called when the SMS directory is reached
+
+    :param : 
+    :return: A string containing text saying the function is working
+    """
+    
     return "This is your Twilio App Working!"
 
 
@@ -74,8 +86,8 @@ def handle_incoming():
     message = request.values.get('Body', None)
     sender  = request.values.get('From', None)
 
-    for k,v in request.values.items():
-        print(k, v)
+#     for k,v in request.values.items():
+#         print(k, v)
 
     print(f"Message: {message}\nSender: {sender}")
 
