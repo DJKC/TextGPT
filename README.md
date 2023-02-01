@@ -1,2 +1,2 @@
 # TextGPT
-Appllication to send sms messages text-davinci-3.
+Application to send sms messages text-davinci-3 and receive an answer.
