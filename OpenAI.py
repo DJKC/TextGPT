@@ -163,7 +163,7 @@ def handle_incoming():
     import time
     time.perf_counter()
 
-    if question.startswith('!'):
+    if "@@" in question:
         import requests
 
         question = question.replace("!", "")
