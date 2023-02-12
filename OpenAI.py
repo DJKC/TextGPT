@@ -166,7 +166,7 @@ def handle_incoming():
     if "@@" in question:
         import requests
 
-        question = question.replace("!", "")
+        question = question.replace("@@", "")
 
         # Define the API endpoint
         endpoint = "https://api.openai.com/v1/images/generations"
