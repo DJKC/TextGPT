@@ -312,77 +312,77 @@ def handle_incoming():
         return response_message.sid
 
 
-# def ask_test_question():
-#     """
-#
-#     :return:
-#     """
-#
-#     def respond(_question, _model, _temperature=0, _pr_pen=0, _freq_pen=0, _max_tokens=200):
-#         """
-#         Creates and retrieves response from openAI model
-#
-#         :param _question: question to be asked
-#         :param _model: Which GPT model to use
-#         :param _temperature: Creativity of the model
-#         :param _pr_pen: increases likelihood of new topics
-#         :param _freq_pen: decrease his likelihood of lines repeating
-#         :param _max_tokens: maximum tokens to be used in total for this request,
-#
-#         :return: The openai response to the question
-#         """
-#
-#         response = openai.Completion.create(n=1, prompt=_question, engine=models[_model],
-#                                             temperature=_temperature, presence_penalty=_pr_pen,
-#                                             frequency_penalty=_freq_pen, max_tokens=_max_tokens)
-#
-#         return response["choices"][0]["text"].removeprefix('?').lstrip()
-#
-#     def make_qlist(_text=None):
-#         """
-#         Takes a list of question (one per line) and creates a list, one per line
-#
-#         :param _text: The questions (one per line) to make into a list
-#         :return: The questions as a list
-#         """
-#
-#         # _text =
-#
-#         lines = _text.split('\n')
-#         if len(lines[-1]) < 2:
-#             lines = lines[:-1]
-#
-#         return lines
-#
-#     new_qs = make_qlist(pyperclip.paste())
-#
-#     model_answers = {x: {} for x in new_qs}
-#     limit = 1
-#
-#     for number, question in enumerate(new_qs[:limit]):
-#         for key in models.keys():
-#             try:
-#                 answer = respond(question, key)
-#             except:
-#                 answer = f"Error using model{models[key]}"
-#
-#             model_answers[question][key] = answer
-#
-#         print(f"{number + 1} of {limit}")
-#
-#     for i in model_answers[new_qs[0]]:
-#         print(f"####################{i}]####################")
-#         print(model_answers[new_qs[0]][i])
-#         print("\n\n\n###############################################")
-#
-#     # List to file
-#     with open('/Users/khallid/Documents/Coding/Python/OpenAI/chatgpt_questions.txt', 'w') as file:
-#         for q in new_qs:
-#             file.write(q + '\n')
-#
-#     # File to list
-#     with open('/Users/khallid/Documents/Coding/Python/OpenAI/chatgpt_questions.txt', 'r') as file:
-#         strings = file.readlines()
+def ask_test_question():
+    """
+
+    :return:
+    """
+
+    def respond(_question, _model, _temperature=0, _pr_pen=0, _freq_pen=0, _max_tokens=200):
+        """
+        Creates and retrieves response from openAI model
+
+        :param _question: question to be asked
+        :param _model: Which GPT model to use
+        :param _temperature: Creativity of the model
+        :param _pr_pen: increases likelihood of new topics
+        :param _freq_pen: decrease his likelihood of lines repeating
+        :param _max_tokens: maximum tokens to be used in total for this request,
+
+        :return: The openai response to the question
+        """
+
+        response = openai.Completion.create(n=1, prompt=_question, engine=models[_model],
+                                            temperature=_temperature, presence_penalty=_pr_pen,
+                                            frequency_penalty=_freq_pen, max_tokens=_max_tokens)
+
+        return response["choices"][0]["text"].removeprefix('?').lstrip()
+
+    def make_qlist(_text=None):
+        """
+        Takes a list of question (one per line) and creates a list, one per line
+
+        :param _text: The questions (one per line) to make into a list
+        :return: The questions as a list
+        """
+
+        # _text =
+
+        lines = _text.split('\n')
+        if len(lines[-1]) < 2:
+            lines = lines[:-1]
+
+        return lines
+
+    new_qs = make_qlist(pyperclip.paste())
+
+    model_answers = {x: {} for x in new_qs}
+    limit = 1
+
+    for number, question in enumerate(new_qs[:limit]):
+        for key in models.keys():
+            try:
+                answer = respond(question, key)
+            except:
+                answer = f"Error using model{models[key]}"
+
+            model_answers[question][key] = answer
+
+        print(f"{number + 1} of {limit}")
+
+    for i in model_answers[new_qs[0]]:
+        print(f"####################{i}]####################")
+        print(model_answers[new_qs[0]][i])
+        print("\n\n\n###############################################")
+
+    # List to file
+    with open('/Users/khallid/Documents/Coding/Python/OpenAI/chatgpt_questions.txt', 'w') as file:
+        for q in new_qs:
+            file.write(q + '\n')
+
+    # File to list
+    with open('/Users/khallid/Documents/Coding/Python/OpenAI/chatgpt_questions.txt', 'r') as file:
+        strings = file.readlines()
 
 
 if __name__ == "__main__":
@@ -395,7 +395,6 @@ if __name__ == "__main__":
     app.debug = False
     app.run(debug=False)
 
-# This version works just fine
 # # Makes a prompt request to Text_DaVinci-3 using Twilio, Ngrok and Flask
 #
 # ##################################################################################################################################################
