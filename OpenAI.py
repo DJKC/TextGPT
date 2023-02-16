@@ -51,38 +51,40 @@ client = Client(account_sid, auth_token)
 messaging_service = client.messaging.services(messaging_sid).fetch()
 messaging_service.update(inbound_request_url=ngrok_tunnel_url + "/sms", inbound_method="POST")
 
-os.chdir("/home/ec2-user/Desktop/Retext/")
+BASE_DIR = "/home/ec2-user/Desktop/Retext"
+os.chdir(BASE_DIR)
 openai.util.logging.getLogger().setLevel(logging.WARNING)
 print(os.getcwd())
 
-models = {"td3": "text-davinci-003",  # Large-scale text generation
-          #      high performance trained on internet text
-          "td2": "text-davinci-002",  # Large-scale text generation
-          #      balance between performance and cost-effectiveness
-          "cd2": "code-davinci-002",  # Code generation and programming language understanding
+models = {"td3": "text-davinci-003",    # Large-scale text generation
+                                        #      high performance trained on internet text
+          "td2": "text-davinci-002",    # Large-scale text generation
+                                        #      balance between performance and cost-effectiveness
+          "cd2": "code-davinci-002",    # Code generation and programming language understanding
           # "ta2": "text-ada-002",      # Text completion and answer generation
           #                             #      high-quality and persuasive text
-          "ta1": "text-ada-001",  # Text completion and answer generation
-          #      trained on a diverse internet text and generating fluent human-like text
-          "ccc": "curie",  # Text generation and question answering
+          "ta1": "text-ada-001",        # Text completion and answer generation
+                                        #      trained on a diverse internet text and generating fluent human-like text
+          "ccc": "curie",               # Text generation and question answering
           #      focused on knowledge-based and conversational tasks
           # "tc3": "text-curie-003",    # Text generation and language understanding
           #                             #      provides additional fine-tuning capabilities
           # "tc2": "text-curie-002",    # Text generation and language understanding
           #                             #      more diverse and in-depth content generation
-          "tc1": "text-curie-001",  # Text generation and language understanding
-          #      performs well on a wide range of natural language tasks
+          "tc1": "text-curie-001",      # Text generation and language understanding
+                                        #      performs well on a wide range of natural language tasks
           # "tb3": "text-babbage-003",  # Text generation and language modeling
           #                             #      specific use cases such as summarization and data-to-text
           # "tb2": "text-babbage-002",  # Text generation and language modeling
           #                             #      text for specific domains
-          "tb1": "text-babbage-001",  # Text generation and language modeling
-          #      more structured and technical text
-          "cc1": "code-cushman-001"}  # Code generation and completion
-#      balance between performance and cost-effectiveness
+          "tb1": "text-babbage-001",    # Text generation and language modeling
+                                        #      more structured and technical text
+          "cc1": "code-cushman-001"}    # Code generation and completion
+                                        #      balance between performance and cost-effectiveness
 
-# Start the Flask App
-app = Flask(__name__)
+
+
+app = Flask(__name__)  # Start the Flask App
 
 
 def create_database():
@@ -376,12 +378,12 @@ def ask_test_question():
         print("\n\n\n###############################################")
 
     # List to file
-    with open('/Users/khallid/Documents/Coding/Python/OpenAI/chatgpt_questions.txt', 'w') as file:
+    with open(f'{BASE_DIR}/chatgpt_questions.txt', 'w') as file:
         for q in new_qs:
             file.write(q + '\n')
 
     # File to list
-    with open('/Users/khallid/Documents/Coding/Python/OpenAI/chatgpt_questions.txt', 'r') as file:
+    with open(f'{BASE_DIR}/chatgpt_questions.txt', 'r') as file:
         strings = file.readlines()
 
 
