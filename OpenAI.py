@@ -12,6 +12,7 @@
 
 import os
 import fxs
+import sys
 import openai
 import sqlite3
 import hashlib
@@ -50,7 +51,16 @@ client = Client(account_sid, auth_token)
 messaging_service = client.messaging.services(messaging_sid).fetch()
 messaging_service.update(inbound_request_url=ngrok_tunnel_url + "/sms", inbound_method="POST")
 
-openai.util.logging.getLogger().setLevel(logging.WARNING)
+# openai.util.logging.getLogger().setLevel(logging.WARNING)
+
+# Set up logging for pyngrok and twilio
+logging.basicConfig(filename='log.txt', level=logging.WARNING, filemode='w', format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+logging.getLogger("pyngrok").setLevel(logging.WARNING)
+logging.getLogger("twilio").setLevel(logging.WARNING)
+logging.getLogger("openai").setLevel(logging.WARNING)
+
+# Redirect stderr to the log file
+sys.stderr = open('log.txt', 'w')
 
 BASE_DIR = {
     "Linux": "/home",
