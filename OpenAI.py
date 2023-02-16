@@ -11,14 +11,13 @@
 # https://platform.openai.com/docs/api-reference/images/create
 
 import os
+import fxs
 import openai
 import sqlite3
-# import twilio
 import hashlib
 import logging
 import pyperclip
-# from pprint import pprint
-import fxs
+import platform
 from pyngrok import ngrok
 from twilio.rest import Client
 from flask import Flask, request
@@ -51,8 +50,19 @@ client = Client(account_sid, auth_token)
 messaging_service = client.messaging.services(messaging_sid).fetch()
 messaging_service.update(inbound_request_url=ngrok_tunnel_url + "/sms", inbound_method="POST")
 
-BASE_DIR = "/home/ec2-user/Desktop/Retext"
-os.chdir(BASE_DIR)
+BASE_DIR = {
+    "Linux": "/home",
+    "Darwin": "OpenAI",
+}.get(platform.system(), "")
+
+if not BASE_DIR:
+    print("The operating system could not be determined.")
+
+try:
+    os.chdir(BASE_DIR)
+except:
+    print(os.getcwd())
+
 openai.util.logging.getLogger().setLevel(logging.WARNING)
 print(os.getcwd())
 
