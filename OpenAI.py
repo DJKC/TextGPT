@@ -10,6 +10,8 @@
 # https://platform.openai.com/tokenizer?view=bpe
 # https://platform.openai.com/docs/api-reference/images/create
 
+print("\t\t~~~~~~~~V3~~~~~~~~")
+
 import os
 import fxs
 import sys
@@ -413,8 +415,7 @@ if __name__ == "__main__":
 
     # Create database
     # create_database()
-          
-    print("\t\t~~~~~~~~V3~~~~~~~~")
+
     app.debug = False
     app.run(debug=False)
 
