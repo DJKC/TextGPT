@@ -391,7 +391,8 @@ if __name__ == "__main__":
 
     # Create database
     # create_database()
-
+          
+    print("\t\t~~~~~~~~V3~~~~~~~~")
     app.debug = False
     app.run(debug=False)
 
