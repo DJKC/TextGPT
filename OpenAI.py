@@ -23,11 +23,21 @@ from pyngrok import ngrok
 from twilio.rest import Client
 from flask import Flask, request
 
+# Set up logging for pyngrok and twilio
+logging.basicConfig(filename='log.txt', level=logging.WARNING, filemode='w', format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+logging.getLogger("pyngrok").setLevel(logging.WARNING)
+logging.getLogger("twilio").setLevel(logging.WARNING)
+logging.getLogger("openai").setLevel(logging.WARNING)
+
+# Redirect stderr to the log file
+sys.stderr = open('log.txt', 'w')
+
 # from twilio.twiml.messaging_response import MessagingResponse
 
 # https://github.com/settings/personal-access-tokens/new
 # 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
 # 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
+
 
 # OpenAI account information
 openai.api_key = fxs.get_config_key("OPENAI")  # OpenAI API key
@@ -52,15 +62,6 @@ messaging_service = client.messaging.services(messaging_sid).fetch()
 messaging_service.update(inbound_request_url=ngrok_tunnel_url + "/sms", inbound_method="POST")
 
 # openai.util.logging.getLogger().setLevel(logging.WARNING)
-
-# Set up logging for pyngrok and twilio
-logging.basicConfig(filename='log.txt', level=logging.WARNING, filemode='w', format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-logging.getLogger("pyngrok").setLevel(logging.WARNING)
-logging.getLogger("twilio").setLevel(logging.WARNING)
-logging.getLogger("openai").setLevel(logging.WARNING)
-
-# Redirect stderr to the log file
-sys.stderr = open('log.txt', 'w')
 
 BASE_DIR = {
     "Linux": "/home",
