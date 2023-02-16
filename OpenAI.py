@@ -50,6 +50,8 @@ client = Client(account_sid, auth_token)
 messaging_service = client.messaging.services(messaging_sid).fetch()
 messaging_service.update(inbound_request_url=ngrok_tunnel_url + "/sms", inbound_method="POST")
 
+openai.util.logging.getLogger().setLevel(logging.WARNING)
+
 BASE_DIR = {
     "Linux": "/home",
     "Darwin": "OpenAI",
@@ -62,9 +64,6 @@ try:
     os.chdir(BASE_DIR)
 except:
     print(os.getcwd())
-
-openai.util.logging.getLogger().setLevel(logging.WARNING)
-print(os.getcwd())
 
 models = {"td3": "text-davinci-003",    # Large-scale text generation
                                         #      high performance trained on internet text
