@@ -15,6 +15,7 @@
 
 # TO-DO
 # If an invalid model is processed in line 294, no text messages is sent the user.
+# Add URL for image in database
 
 import os
 import sys
