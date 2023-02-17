@@ -30,7 +30,7 @@ logging.getLogger("twilio").setLevel(logging.DEBUG)
 logging.getLogger("openai").setLevel(logging.DEBUG)
 
 # Redirect stderr to the log file
-sys.stderr = open('log.txt', 'w')
+# sys.stderr = open('log.txt', 'w')
 
 DIRS = {
     "Linux": "/home/ec2-user/Desktop/TextGPT",
