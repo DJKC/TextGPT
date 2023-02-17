@@ -12,6 +12,10 @@
 # https://platform.openai.com/tokenizer?view=bpe
 # https://platform.openai.com/docs/api-reference/images/create
 
+
+# TO-DO
+# If an invalid model is processed in line 294, no text messages is sent the user.
+
 import os
 import sys
 import openai
@@ -206,6 +210,7 @@ def handle_incoming():
     # Extract temperature and max tokens from message, if they exist
     temperature = 0.5
     max_tokens = 200
+    model_set = "td3"
 
     import time
     time.perf_counter()
@@ -274,6 +279,7 @@ def handle_incoming():
     else:
         if "::" in question:
             params = question.split("::")[1]
+            question = question.split("::")[0]
 
             if ' ' in params:
                 params = params.replace(' ', '')
@@ -282,11 +288,18 @@ def handle_incoming():
             temperature = float(parameters[0])
 
             try:
-                max_tokens = int(parameters[1])
-                question = question.split("::")[0]
+                model_set = str(parameters[1])
+
+                try:
+                    max_tokens = int(parameters[2])
+                except:
+                    print("No third parameter")
             except:
                 print("No second parameter")
 
+        print(f"{temperature} | {model_set} | {max_tokens}")
+
+        print(question)
         # Send message to OpenAI API
         response = openai.Completion.create(n=1,  # How many completions to generate for each prompt.
                                             user=user_hash,  # string representing a user
@@ -294,7 +307,7 @@ def handle_incoming():
                                             top_p=1,
                                             # 0.1 means only the tokens comprising the top 10% probability mass are considered.
                                             prompt=question,  #
-                                            engine=models["td2"],  #
+                                            engine=models[model_set],  #
                                             max_tokens=max_tokens,
                                             # The maximum number of tokens to generate in the completion
                                             temperature=temperature,
