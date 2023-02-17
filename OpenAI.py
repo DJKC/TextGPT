@@ -24,10 +24,10 @@ from flask import Flask, request
 
 # Set up logging for pyngrok and twilio
 # NOTSET, DEBUG, INFO, WARNING, ERROR, CRITICAL
-logging.basicConfig(filename='log.txt', level=logging.WARNING, filemode='w', format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-logging.getLogger("pyngrok").setLevel(logging.WARNING)
-logging.getLogger("twilio").setLevel(logging.WARNING)
-logging.getLogger("openai").setLevel(logging.WARNING)
+logging.basicConfig(filename='log.txt', level=logging.DEBUG, filemode='w', format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+logging.getLogger("pyngrok").setLevel(logging.DEBUG)
+logging.getLogger("twilio").setLevel(logging.DEBUG)
+logging.getLogger("openai").setLevel(logging.DEBUG)
 
 # Redirect stderr to the log file
 sys.stderr = open('log.txt', 'w')
