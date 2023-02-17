@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 # Makes a prompt request to Text_DaVinci-3 using Twilio, Ngrok and Flask
 
