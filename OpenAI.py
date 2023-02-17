@@ -212,6 +212,16 @@ def handle_incoming():
 
     print("Message received from", request.values["From"])
 
+    if(question.startswith("!!")):
+        help_message = "::temp:max_tokens | @@ for image | !! for help"
+
+        response_message = client.messages.create(messaging_service_sid=messaging_sid,
+                                                  body=help_message,
+                                                  from_=from_number,
+                                                  to=sender)
+
+        return "sid"
+
     if "@@" in question:
         import requests
 
@@ -257,9 +267,9 @@ def handle_incoming():
         return "sid"
     # ...
 
-    elif "!!" in question:
-        # Ask ChatGPT
-        pass
+    # elif "!!" in question:
+    #     # Ask ChatGPT
+    #     pass
 
     else:
         if "::" in question:
