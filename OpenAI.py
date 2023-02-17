@@ -661,3 +661,33 @@ fi
 python3 "$LOCAL_DIR/OpenAI.py"
 
 """
+
+"""
+Install Python 3.9 in AWS EC2
+
+sudo yum -y groupinstall "Development Tools"
+sudo yum -y install openssl-devel bzip2-devel libffi-devel
+
+gcc --version
+# gcc (GCC) 7.3.1
+
+make --version
+# GNU Make 3.82
+
+sudo yum -y install wget
+wget https://www.python.org/ftp/python/3.9.10/Python-3.9.10.tgz
+
+tar xvf Python-3.9.10.tgz
+
+cd Python-*/
+./configure --enable-optimizations
+sudo make altinstall 
+
+python3.9 --version
+# Python 3.9.10
+
+pip3.9 --version
+# pip 21.2.4
+
+/usr/local/bin/python3.9 -m pip install --upgrade pip 
+"""
