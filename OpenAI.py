@@ -25,9 +25,9 @@ from flask import Flask, request
 # Set up logging for pyngrok and twilio
 # NOTSET, DEBUG, INFO, WARNING, ERROR, CRITICAL
 logging.basicConfig(filename='log.txt', level=logging.WARNING, filemode='w', format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-logging.getLogger("pyngrok").setLevel(logging.NOTSET)
-logging.getLogger("twilio").setLevel(logging.NOTSET)
-logging.getLogger("openai").setLevel(logging.NOTSET)
+logging.getLogger("pyngrok").setLevel(logging.WARNING)
+logging.getLogger("twilio").setLevel(logging.WARNING)
+logging.getLogger("openai").setLevel(logging.WARNING)
 
 # Redirect stderr to the log file
 sys.stderr = open('log.txt', 'w')
