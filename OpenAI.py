@@ -10,103 +10,123 @@
 # https://platform.openai.com/tokenizer?view=bpe
 # https://platform.openai.com/docs/api-reference/images/create
 
-print("\t\t~~~~~~~~V3~~~~~~~~")
-
 import os
-import fxs
 import sys
 import openai
 import sqlite3
 import hashlib
 import logging
-import pyperclip
 import platform
+import pyperclip
 from pyngrok import ngrok
 from twilio.rest import Client
 from flask import Flask, request
 
 # Set up logging for pyngrok and twilio
+# NOTSET, DEBUG, INFO, WARNING, ERROR, CRITICAL
 logging.basicConfig(filename='log.txt', level=logging.WARNING, filemode='w', format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-logging.getLogger("pyngrok").setLevel(logging.WARNING)
-logging.getLogger("twilio").setLevel(logging.WARNING)
-logging.getLogger("openai").setLevel(logging.WARNING)
+logging.getLogger("pyngrok").setLevel(logging.NOTSET)
+logging.getLogger("twilio").setLevel(logging.NOTSET)
+logging.getLogger("openai").setLevel(logging.NOTSET)
 
 # Redirect stderr to the log file
 sys.stderr = open('log.txt', 'w')
 
-# from twilio.twiml.messaging_response import MessagingResponse
+DIRS = {
+    "Linux": "/home/ec2-user/Desktop/TextGPT",
+    "Darwin": "/Users/khallid/PycharmProjects/TextGPT",
+}
 
-# https://github.com/settings/personal-access-tokens/new
-# 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
-# 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
+BASE_DIR = DIRS.get(platform.system(), "")
 
-
-# OpenAI account information
-openai.api_key = fxs.get_config_key("OPENAI")  # OpenAI API key
-
-# Ngrok tunnel start
-ngrok.set_auth_token(fxs.get_config_key("NGROK"))
-ngrok_tunnel_url = ngrok.connect(5000).public_url
-print(f"Tunnel Created at {ngrok_tunnel_url}")
-
-# Twilio account information
-from_number = fxs.get_config_key("TWILIO", False, "TWILIO_PHONE_NUMBER")  # Twilio phone number
-messaging_sid = fxs.get_config_key("TWILIO", False, "MESSAGING_SID")
-to_number = fxs.get_config_key("TWILIO", False, "CELL_NUMBER")  # Your phone number
-auth_token = fxs.get_config_key("TWILIO", False, "SECRET")
-account_sid = fxs.get_config_key("TWILIO", False, "SID")
-
-client = Client(account_sid, auth_token)
-# don't think I need this since I am updating the webhook 3 lines down
-# client.incoming_phone_numbers.list(phone_number = from_number)[0].update(sms_url = ngrok_tunnel_url)
-
-messaging_service = client.messaging.services(messaging_sid).fetch()
-messaging_service.update(inbound_request_url=ngrok_tunnel_url + "/sms", inbound_method="POST")
-
-# openai.util.logging.getLogger().setLevel(logging.WARNING)
-
-BASE_DIR = {
-    "Linux": "/home",
-    "Darwin": "OpenAI",
-}.get(platform.system(), "")
-
-if not BASE_DIR:
-    print("The operating system could not be determined.")
+CONFIG_FILE = {
+    DIRS["Linux"]: "/home/ec2-user/CONFIG_APIS.ini",
+    DIRS["Darwin"]: "/Users/khallid/Documents/Coding/Python/CONFIG_APIS.ini",
+}.get(BASE_DIR, "")
 
 try:
     os.chdir(BASE_DIR)
+    print(f"Success, current {os.getcwd()}")
 except:
-    print(os.getcwd())
+    print(f"{BASE_DIR} not found, currently in {os.getcwd()}")
 
-models = {"td3": "text-davinci-003",    # Large-scale text generation
-                                        #      high performance trained on internet text
-          "td2": "text-davinci-002",    # Large-scale text generation
-                                        #      balance between performance and cost-effectiveness
-          "cd2": "code-davinci-002",    # Code generation and programming language understanding
-          # "ta2": "text-ada-002",      # Text completion and answer generation
-          #                             #      high-quality and persuasive text
-          "ta1": "text-ada-001",        # Text completion and answer generation
-                                        #      trained on a diverse internet text and generating fluent human-like text
-          "ccc": "curie",               # Text generation and question answering
-          #      focused on knowledge-based and conversational tasks
-          # "tc3": "text-curie-003",    # Text generation and language understanding
-          #                             #      provides additional fine-tuning capabilities
-          # "tc2": "text-curie-002",    # Text generation and language understanding
-          #                             #      more diverse and in-depth content generation
-          "tc1": "text-curie-001",      # Text generation and language understanding
-                                        #      performs well on a wide range of natural language tasks
-          # "tb3": "text-babbage-003",  # Text generation and language modeling
-          #                             #      specific use cases such as summarization and data-to-text
-          # "tb2": "text-babbage-002",  # Text generation and language modeling
-          #                             #      text for specific domains
-          "tb1": "text-babbage-001",    # Text generation and language modeling
-                                        #      more structured and technical text
-          "cc1": "code-cushman-001"}    # Code generation and completion
-                                        #      balance between performance and cost-effectiveness
-
-
+print(f"Config directory:  {CONFIG_FILE}")
 
 app = Flask(__name__)  # Start the Flask App
+
+def get_config_key(_section_name = None, _secret_only = True, _key_name = None, _print = False):
+    """
+    Return the secret corresponding to the section selected
+
+    :param _section_name: The section for which to ge the key
+    :param _secret_only: Return the secret only
+    :param _key_name: The name of the key to return
+    :return: The key to return
+    """
+
+    import configparser
+    # import logging
+
+    # logger = logging.getLogger()
+    #
+    # # Set the logging levelS
+    # if(not _print):
+    #     logger.setLevel(logging.INFO)
+    # else:
+    #     logger.setLevel(logging.DEBUG)
+
+    config = configparser.ConfigParser()
+    config.read(CONFIG_FILE)
+
+    sections = config.sections()
+    section_name = _section_name
+
+    while section_name not in sections:
+        # Get the sections
+        # Print the sections with numbers
+        for i, section in enumerate(sections):
+            print(f"{i + 1}. {section}")
+
+        # Ask the user which section they would like to access
+        section_number = int(input("Which section would you like to access? (Enter a number) "))
+
+        # Check if the section number is valid
+        if section_number > 0 and section_number <= len(sections):
+            # Get the selected section name
+            section_name = sections[section_number - 1]
+
+        else:
+            print(f"Invalid section number.")
+
+    key_name = _key_name
+
+    if _secret_only:
+        logging.debug(f"Secret: {config[section_name]['SECRET']}")
+        return config[section_name]['SECRET']
+
+    else:
+        while key_name is None:
+            # Get the keys in the section
+            keys = config[section_name]._options()
+            print("Keys:", keys)
+
+            # Ask the user which key they would like to access
+            key_number = int(input("Which key would you like to access? "))
+
+            # Check if the section number is valid
+            if key_number > 0 and key_number <= len(keys):
+                # Get the selected section name
+                key_name = keys[key_number - 1]
+
+            # Check if the key exists
+            if key_name in keys:
+                value = config[section_name][key_name]
+                logging.debug(f"{key_name} = {value}")
+            else:
+                print(f"Key '{key_name}' not found in section '{section_name}'.")
+
+        logging.debug(f"{key_name}: {config[section_name][key_name]}")
+        return config[section_name][key_name]
 
 
 def create_database():
@@ -186,6 +206,8 @@ def handle_incoming():
 
     import time
     time.perf_counter()
+
+    print("Message received from", request.values["From"])
 
     if "@@" in question:
         import requests
@@ -300,8 +322,8 @@ def handle_incoming():
 
         # Extract data from response object
         finish_reason = response['choices'][0]['finish_reason']
-        response_id = response['id']
-        token_data = response["usage"]
+        response_id   = response['id']
+        token_data    = response["usage"]
 
         # Insert these values into db: user_id, prompt, response, temperature, max_tokens, timestamp, model, finish_reason, sender, id
         database_values = [question, message_response, temperature, response["model"],
@@ -409,6 +431,66 @@ def ask_test_question():
         strings = file.readlines()
 
 
+# from twilio.twiml.messaging_response import MessagingResponse
+
+# https://github.com/settings/personal-access-tokens/new
+# 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
+# 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
+
+
+# OpenAI account information
+openai.api_key = get_config_key("OPENAI")  # OpenAI API key
+
+# Ngrok tunnel start
+# ngrok.kill()
+# ngrok.disconnect()
+
+ngrok.set_auth_token(get_config_key("NGROK"))
+ngrok_tunnel_url = ngrok.connect(5000).public_url
+print(f"Tunnel Created at {ngrok_tunnel_url}")
+
+# Twilio account information
+from_number   = get_config_key("TWILIO", False, "TWILIO_PHONE_NUMBER")  # Twilio phone number
+messaging_sid = get_config_key("TWILIO", False, "MESSAGING_SID")
+to_number     = get_config_key("TWILIO", False, "CELL_NUMBER")  # Your phone number
+auth_token    = get_config_key("TWILIO", False, "SECRET")
+account_sid   = get_config_key("TWILIO", False, "SID")
+
+client = Client(account_sid, auth_token)
+# don't think I need this since I am updating the webhook 3 lines down
+# client.incoming_phone_numbers.list(phone_number = from_number)[0].update(sms_url = ngrok_tunnel_url)
+
+messaging_service = client.messaging.services(messaging_sid).fetch()
+messaging_service.update(inbound_request_url=ngrok_tunnel_url + "/sms", inbound_method="POST")
+
+# openai.util.logging.getLogger().setLevel(logging.WARNING)
+
+models = {"td3": "text-davinci-003",    # Large-scale text generation
+                                        #      high performance trained on internet text
+          "td2": "text-davinci-002",    # Large-scale text generation
+                                        #      balance between performance and cost-effectiveness
+          "cd2": "code-davinci-002",    # Code generation and programming language understanding
+          # "ta2": "text-ada-002",      # Text completion and answer generation
+          #                             #      high-quality and persuasive text
+          "ta1": "text-ada-001",        # Text completion and answer generation
+                                        #      trained on a diverse internet text and generating fluent human-like text
+          "ccc": "curie",               # Text generation and question answering
+          #      focused on knowledge-based and conversational tasks
+          # "tc3": "text-curie-003",    # Text generation and language understanding
+          #                             #      provides additional fine-tuning capabilities
+          # "tc2": "text-curie-002",    # Text generation and language understanding
+          #                             #      more diverse and in-depth content generation
+          "tc1": "text-curie-001",      # Text generation and language understanding
+                                        #      performs well on a wide range of natural language tasks
+          # "tb3": "text-babbage-003",  # Text generation and language modeling
+          #                             #      specific use cases such as summarization and data-to-text
+          # "tb2": "text-babbage-002",  # Text generation and language modeling
+          #                             #      text for specific domains
+          "tb1": "text-babbage-001",    # Text generation and language modeling
+                                        #      more structured and technical text
+          "cc1": "code-cushman-001"}    # Code generation and completion
+                                        #      balance between performance and cost-effectiveness
+
 if __name__ == "__main__":
     # if os.environ.get('WERKZEUG_RUN_MAIN') != 'true':
     #     start_ngrok(ngrok_url)
@@ -416,8 +498,9 @@ if __name__ == "__main__":
     # Create database
     # create_database()
 
+    # Setting this to True makes Ngrok use more than one tunnel and breaks free version
     app.debug = False
-    app.run(debug=False)
+    app.run(debug = False)
 
 # # Makes a prompt request to Text_DaVinci-3 using Twilio, Ngrok and Flask
 #
