@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+# dont use this yet !/usr/bin/env python3
 
 # Makes a prompt request to Text_DaVinci-3 using Twilio, Ngrok and Flask
 
@@ -294,7 +294,10 @@ def handle_incoming():
                                             frequency_penalty=0)  # 0 and 2.0. Positive values penalize new tokens based on existing frequency in text, decreasing the model's likelihood to repeat the same line verbatim.
 
         # Get the message response
-        message_response = response["choices"][0]["text"].removeprefix('?').lstrip()  # + f"[{params}]"
+        try: # for 3.9
+            message_response = response["choices"][0]["text"].removeprefix('?').lstrip()  # + f"[{params}]"
+        except: # for 3.7
+            message_response = response["choices"][0]["text"].lstrip('?').lstrip()  # + f"[{params}]"
 
         # if message_response.startswith('?'):
         #     message_response = message_response.removeprefix('?')
