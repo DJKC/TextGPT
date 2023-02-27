@@ -14,8 +14,11 @@
 
 
 # TO-DO
-# If an invalid model is processed in line 294, no text messages is sent the user.
-# Add URL for image in database
+# If an invalid model is processed in line 294, no text messages is sent the user, set q default
+# 253
+#     take advanced parameters in any order
+# make into a class
+# add image generation to database with url
 
 import os
 import sys
@@ -39,6 +42,9 @@ logging.getLogger("openai").setLevel(logging.WARNING)
 
 # Redirect stderr to the log file
 # sys.stderr = open('log.txt', 'w')
+
+# No other image models yet
+# image_models = []
 
 DIRS = {
     "Linux": "/home/ec2-user/Desktop/TextGPT",
@@ -199,8 +205,29 @@ def handle_incoming():
     question = request.values.get('Body', None)
     sender = request.values.get('From', None)
 
-    # for k,v in request.values.items():
-    #     print(k, v)
+    # request.values.items()
+    # {
+    #     "ToCountry": "US",
+    #     "ToState": "NJ",
+    #     "SmsMessageSid": "SM7f93b4c435808e381abc763c79059d4d",
+    #     "NumMedia": "0",
+    #     "ToCity": "NEWARK",
+    #     "FromZip": "92506",
+    #     "SmsSid": "SM7f93b4c435808e381abc763c79059d4d",
+    #     "FromState": "CA",
+    #     "SmsStatus": "received",
+    #     "FromCity": "RIVERSIDE",
+    #     "Body": "When was GPT 1.5 released?",
+    #     "FromCountry": "US",
+    #     "To": "+19737918518",
+    #     "MessagingServiceSid": "MG40c519a5b8acb936be5f0c92c3957808",
+    #     "ToZip": "07105",
+    #     "NumSegments": "1",
+    #     "MessageSid": "SM7f93b4c435808e381abc763c79059d4d",
+    #     "AccountSid": "AC35cf8442aefc62b1f2fc53985841ae7e",
+    #     "From": "+19512339033",
+    #     "ApiVersion": "2010-04-01",
+    # }
 
     # print(f"Message: {message}\nSender: {sender}")
 
@@ -218,6 +245,17 @@ def handle_incoming():
 
     print("Message received from", request.values["From"])
 
+    tapback_filters = ["Loved \"",
+                      "Liked \"",
+                      "Disliked \""
+                      "Laughed at \"",
+                      "Emphasized \"",
+                      "Questioned \"",]
+
+    for tapback in tapback_filters:
+        # Do not do anything
+        pass
+
     if(question.startswith("!!")):
         help_message = "::temp:max_tokens | @@ for image | !! for help"
 
@@ -233,13 +271,13 @@ def handle_incoming():
 
         question = question.replace("@@", "")
 
+        ##########################################################################################################
+
         # Define the API endpoint
         endpoint = "https://api.openai.com/v1/images/generations"
 
         # Define the text description of the image you want to generate
         description = question
-
-        # Define the API key to use for authentication
 
         # Define the headers to send with the API request
         headers = {
@@ -254,7 +292,7 @@ def handle_incoming():
         }
 
         # Make the API request
-        response = requests.post(endpoint, headers=headers, json=data)
+        response = requests.post(endpoint, headers = headers, json = data)
 
         # Check if the API request was successful
         if response.status_code == 200:
@@ -262,6 +300,9 @@ def handle_incoming():
             image_url = response.json()["data"][0]["url"]
 
             # Send response back to user's phone number via Twilio
+
+            ##########################################################################################################
+
             response_message = client.messages.create(messaging_service_sid=messaging_sid,
                                                       body=image_url,
                                                       from_=from_number,
@@ -388,79 +429,6 @@ def handle_incoming():
         return response_message.sid
 
 
-def ask_test_question():
-    """
-
-    :return:
-    """
-
-    def respond(_question, _model, _temperature=0, _pr_pen=0, _freq_pen=0, _max_tokens=200):
-        """
-        Creates and retrieves response from openAI model
-
-        :param _question: question to be asked
-        :param _model: Which GPT model to use
-        :param _temperature: Creativity of the model
-        :param _pr_pen: increases likelihood of new topics
-        :param _freq_pen: decrease his likelihood of lines repeating
-        :param _max_tokens: maximum tokens to be used in total for this request,
-
-        :return: The openai response to the question
-        """
-
-        response = openai.Completion.create(n=1, prompt=_question, engine=models[_model],
-                                            temperature=_temperature, presence_penalty=_pr_pen,
-                                            frequency_penalty=_freq_pen, max_tokens=_max_tokens)
-
-        return response["choices"][0]["text"].removeprefix('?').lstrip()
-
-    def make_qlist(_text=None):
-        """
-        Takes a list of question (one per line) and creates a list, one per line
-
-        :param _text: The questions (one per line) to make into a list
-        :return: The questions as a list
-        """
-
-        # _text =
-
-        lines = _text.split('\n')
-        if len(lines[-1]) < 2:
-            lines = lines[:-1]
-
-        return lines
-
-    new_qs = make_qlist(pyperclip.paste())
-
-    model_answers = {x: {} for x in new_qs}
-    limit = 1
-
-    for number, question in enumerate(new_qs[:limit]):
-        for key in models.keys():
-            try:
-                answer = respond(question, key)
-            except:
-                answer = f"Error using model{models[key]}"
-
-            model_answers[question][key] = answer
-
-        print(f"{number + 1} of {limit}")
-
-    for i in model_answers[new_qs[0]]:
-        print(f"####################{i}]####################")
-        print(model_answers[new_qs[0]][i])
-        print("\n\n\n###############################################")
-
-    # List to file
-    with open(f'{BASE_DIR}/chatgpt_questions.txt', 'w') as file:
-        for q in new_qs:
-            file.write(q + '\n')
-
-    # File to list
-    with open(f'{BASE_DIR}/chatgpt_questions.txt', 'r') as file:
-        strings = file.readlines()
-
-
 # from twilio.twiml.messaging_response import MessagingResponse
 
 # https://github.com/settings/personal-access-tokens/new
@@ -495,159 +463,39 @@ messaging_service.update(inbound_request_url=ngrok_tunnel_url + "/sms", inbound_
 
 # openai.util.logging.getLogger().setLevel(logging.WARNING)
 
+models = {"td3": "text-davinci-003",    # Large-scale text generation | high performance trained on internet text
+          "td2": "text-davinci-002",    # Large-scale text generation | balance between performance and cost-effectiveness
+          "cd2": "code-davinci-002",    # Code generation and programming language understanding
+          "ta1": "text-ada-001",        # Text completion and answer generation  | trained on a diverse internet text and generating fluent human-like text
+          "ccc": "curie",               # Text generation and question answering | focused on knowledge-based and conversational tasks
+          "tc1": "text-curie-001",      # Text generation and language understanding | performs well on a wide range of natural language tasks
+          "tb1": "text-babbage-001",    # Text generation and language modeling | more structured and technical text
+          "cc1": "code-cushman-001"}    # Code generation and completion | balance between performance and cost-effectiveness
+"""
 models = {"td3": "text-davinci-003",    # Large-scale text generation
                                         #      high performance trained on internet text
           "td2": "text-davinci-002",    # Large-scale text generation
                                         #      balance between performance and cost-effectiveness
           "cd2": "code-davinci-002",    # Code generation and programming language understanding
-          # "ta2": "text-ada-002",      # Text completion and answer generation
-          #                             #      high-quality and persuasive text
           "ta1": "text-ada-001",        # Text completion and answer generation
                                         #      trained on a diverse internet text and generating fluent human-like text
           "ccc": "curie",               # Text generation and question answering
-          #      focused on knowledge-based and conversational tasks
-          # "tc3": "text-curie-003",    # Text generation and language understanding
-          #                             #      provides additional fine-tuning capabilities
-          # "tc2": "text-curie-002",    # Text generation and language understanding
-          #                             #      more diverse and in-depth content generation
+                                        #      focused on knowledge-based and conversational tasks
           "tc1": "text-curie-001",      # Text generation and language understanding
                                         #      performs well on a wide range of natural language tasks
-          # "tb3": "text-babbage-003",  # Text generation and language modeling
-          #                             #      specific use cases such as summarization and data-to-text
-          # "tb2": "text-babbage-002",  # Text generation and language modeling
-          #                             #      text for specific domains
           "tb1": "text-babbage-001",    # Text generation and language modeling
                                         #      more structured and technical text
           "cc1": "code-cushman-001"}    # Code generation and completion
                                         #      balance between performance and cost-effectiveness
+"""
 
 if __name__ == "__main__":
     # if os.environ.get('WERKZEUG_RUN_MAIN') != 'true':
     #     start_ngrok(ngrok_url)
 
-    # Create database
-    # create_database()
-
     # Setting this to True makes Ngrok use more than one tunnel and breaks free version
     app.debug = False
     app.run(debug = False)
-
-# # Makes a prompt request to Text_DaVinci-3 using Twilio, Ngrok and Flask
-#
-# ##################################################################################################################################################
-# # HELPFUL LINKS
-# # https://console.twilio.com/us1/develop/phone-numbers/manage/incoming?frameUrl=%2Fconsole%2Fphone-numbers%2Fincoming%2FPN43550d505a24d5283e6b7b65f76b2333%3Fx-target-region%3Dus1
-# # A message comes in, set webhook here, for individual phone numbers
-#
-# # https://console.twilio.com/us1/service/sms/MG40c519a5b8acb936be5f0c92c3957808/sms-service-instance-configure?frameUrl=%2Fconsole%2Fsms%2Fservices%2FMG40c519a5b8acb936be5f0c92c3957808%3Fx-target-region%3Dus1
-# # Set webhook for incoming messages, for messaging service
-#
-# # https://www.toptal.com/developers/postbin/
-#
-# # https://dashboard.ngrok.com/
-# ##################################################################################################################################################
-#
-# import os
-# import fxs
-# import twilio
-# import openai
-# from pyngrok import ngrok
-# from twilio.rest import Client
-# from flask import Flask, request, redirect
-# from twilio.twiml.messaging_response import MessagingResponse
-#
-# # OpenAI account information
-# openai.api_key = fxs.get_config_key("OPENAI")  # OpenAI API key
-#
-# # Ngrok tunnel start
-# ngrok.set_auth_token(fxs.get_config_key("NGROK"))
-# ngrok_tunnel_url = ngrok.connect(5000).public_url
-# print(f"Tunnel Created at {ngrok_tunnel_url}")
-#
-# # Twilio account information
-# from_number = fxs.get_config_key("TWILIO", False, "TWILIO_PHONE_NUMBER")  # Twilio phone number
-# messaging_sid = fxs.get_config_key("TWILIO", False, "MESSAGING_SID")
-# to_number = fxs.get_config_key("TWILIO", False, "CELL_NUMBER")  # Your phone number
-# auth_token = fxs.get_config_key("TWILIO", False, "SECRET")
-# account_sid = fxs.get_config_key("TWILIO", False, "SID")
-#
-# client = Client(account_sid, auth_token)
-# # don't think I need this since I am updating the webhook 3 lines down
-# # client.incoming_phone_numbers.list(phone_number = from_number)[0].update(sms_url = ngrok_tunnel_url)
-#
-# messaging_service = client.messaging.services(messaging_sid).fetch()
-# messaging_service.update(inbound_request_url=ngrok_tunnel_url + "/sms", inbound_method="POST")
-#
-# # Start the Flask App
-# app = Flask(__name__)
-#
-#
-# @app.route("/")
-# def root():
-#     """
-#     The function that will be called when the root directory is reached.
-#     :param :
-#     :return: A string containing text displaying the Ngrok tunnel url
-#     """
-#
-#     return f"LANDING! prints to browser @ {ngrok_tunnel_url}"
-#
-#
-# # go to sms to see this function at work
-# @app.route("/sms")
-# def sms():
-#     """
-#     The function that will be called when the SMS directory is reached
-#     :param :
-#     :return: A string containing text saying the function is working
-#     """
-#
-#     return "This is your Twilio App Working!"
-#
-#
-# @app.route("/sms", methods=['POST'])
-# def handle_incoming():
-#     """
-#     Handles incoming sms messages and responds with Davinci's response
-#     :param request: The question to be asked of Text-Davinci-3
-#     :return: The message.sid value
-#     """
-#
-#     # Get message from Twilio request
-#     message = request.values.get('Body', None)
-#     sender = request.values.get('From', None)
-#
-#     #     for k,v in request.values.items():
-#     #         print(k, v)
-#
-#     print(f"Message: {message}\nSender: {sender}")
-#
-#     # Send message to OpenAI API
-#     response = openai.Completion.create(engine="text-davinci-003",
-#                                         prompt=f"{message}",
-#                                         max_tokens=2048,
-#                                         n=1,
-#                                         stop=None,
-#                                         temperature=0.5)
-#
-#     # Get the message response
-#     message_response = response["choices"][0]["text"]
-#
-#     # Send response back to user's phone number via Twilio
-#     message = client.messages.create(messaging_service_sid=messaging_sid,
-#                                      body=message_response,
-#                                      from_=from_number,
-#                                      to=sender)
-#
-#     return message.sid
-#
-#
-# if __name__ == "__main__":
-#     # if os.environ.get('WERKZEUG_RUN_MAIN') != 'true':
-#     #     start_ngrok(ngrok_url)
-#
-#     app.run(debug=False)
-
 
 
 """
