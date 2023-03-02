@@ -2,11 +2,13 @@
 
 import os
 import sys
+import json
 import openai
 import sqlite3
 import hashlib
 import logging
 import platform
+import requests
 import pyperclip
 from pyngrok import ngrok
 from twilio.rest import Client
@@ -448,6 +450,14 @@ class TextGPT:
 
         conn.commit()
         conn.close()
+
+    def get_twilio_balance(self):
+        sid = self.get_config_key("TWILIO", False, "SID")
+        auth = self.get_config_key("TWILIO")
+        url = f"https://api.twilio.com/2010-04-01/Accounts/{sid}/Balance.json"
+        balance = json.loads(requests.get(url, auth=(sid, auth)).content)["balance"]
+
+        return balance
 
     def run(self):
         """
