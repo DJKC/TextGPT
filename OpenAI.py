@@ -1,5 +1,32 @@
 # Connects to a user to Text-Davinci-3 through Twilio and OpenAi to ask a question and receive an answer
 
+# https://platform.openai.com/docs/models/gpt-3-5?utm_medium=email&_hsmi=248356722&utm_content=248356722&utm_source=hs_email
+
+# https://console.twilio.com/us1/develop/phone-numbers/manage/incoming?frameUrl=%2Fconsole%2Fphone-numbers%2Fincoming%2FPN43550d505a24d5283e6b7b65f76b2333%3Fx-target-region%3Dus1
+#      A message comes in, set webhook here, for individual phone numbers
+# https://console.twilio.com/us1/service/sms/MG40c519a5b8acb936be5f0c92c3957808/sms-service-instance-configure?frameUrl=%2Fconsole%2Fsms%2Fservices%2FMG40c519a5b8acb936be5f0c92c3957808%3Fx-target-region%3Dus1
+#      Set webhook for incoming messages, for messaging service
+# https://www.toptal.com/developers/postbin/
+# https://dashboard.ngrok.com/
+# https://platform.openai.com/docs/api-reference/moderations/create
+# https://platform.openai.com/tokenizer?view=bpe
+# https://platform.openai.com/docs/api-reference/images/create
+
+
+# TO-DO
+# If an invalid model is processed in line 294, no text messages is sent the user, set q default
+# 253
+#     take advanced parameters in any order
+# make into a class
+# add image generation to database with url
+# if ngrok tunnel error, use 78 - 80 to stop excess tunnels
+
+# For tokenizing
+# Encoding name 	OpenAI models
+# cl100k_base 	ChatGPT models, text-embedding-ada-002
+# p50k_base 	Code models, text-davinci-002, text-davinci-003
+# r50k_base (or gpt2) 	GPT-3 models like davinci
+
 import os
 import sys
 import json
@@ -65,32 +92,23 @@ class TextGPT:
         # Twilio account information
         self.from_number = self.get_config_key("TWILIO", False, "TWILIO_PHONE_NUMBER")  # Twilio phone number
         self.messaging_sid = self.get_config_key("TWILIO", False, "MESSAGING_SID")
-        to_number = self.get_config_key("TWILIO", False, "CELL_NUMBER")  # Your phone number
         auth_token = self.get_config_key("TWILIO", False, "SECRET")
         account_sid = self.get_config_key("TWILIO", False, "SID")
 
         self.client = Client(account_sid, auth_token)
-        # don't think I need this since I am updating the webhook 3 lines down
-        # client.incoming_phone_numbers.list(phone_number = from_number)[0].update(sms_url = ngrok_tunnel_url)
 
         self.messaging_service = self.client.messaging.services(self.messaging_sid).fetch()
         self.messaging_service.update(inbound_request_url=ngrok_tunnel_url + "/sms", inbound_method="POST")
 
-        # openai.util.logging.getLogger().setLevel(logging.WARNING)
 
         self.models = {"td3": "text-davinci-003",  # Large-scale text generation | high performance trained on internet text
-                  "td2": "text-davinci-002",
-                  # Large-scale text generation | balance between performance and cost-effectiveness
-                  "cd2": "code-davinci-002",  # Code generation and programming language understanding
-                  "ta1": "text-ada-001",
-                  # Text completion and answer generation  | trained on a diverse internet text and generating fluent human-like text
-                  "ccc": "curie",
-                  # Text generation and question answering | focused on knowledge-based and conversational tasks
-                  "tc1": "text-curie-001",
-                  # Text generation and language understanding | performs well on a wide range of natural language tasks
-                  "tb1": "text-babbage-001",
-                  # Text generation and language modeling | more structured and technical text
-                  "cc1": "code-cushman-001"}
+                       "td2": "text-davinci-002",  # Large-scale text generation | balance between performance and cost-effectiveness
+                       "cd2": "code-davinci-002",  # Code generation and programming language understanding
+                       "ta1": "text-ada-001",      # Text completion and answer generation  | trained on a diverse internet text and generating fluent human-like text
+                       "ccc": "curie",             # Text generation and question answering | focused on knowledge-based and conversational tasks
+                       "tc1": "text-curie-001",    # Text generation and language understanding | performs well on a wide range of natural language tasks
+                       "tb1": "text-babbage-001",  # Text generation and language modeling | more structured and technical text
+                       "cc1": "code-cushman-001"}  # Code generation and completion | Balance between performance and cost-effectiveness
 
         @self.app.route("/sms", methods=['POST'])
         def handle_incoming():
@@ -139,9 +157,6 @@ class TextGPT:
             temperature = 0.5
             max_tokens = 200
             model_set = "td3"
-
-            import time
-            time.perf_counter()
 
             print("Message received from", request.values["From"])
 
@@ -264,11 +279,6 @@ class TextGPT:
                 except:  # for 3.7
                     message_response = response["choices"][0]["text"].lstrip('?').lstrip()  # + f"[{params}]"
 
-                # if message_response.startswith('?'):
-                #     message_response = message_response.removeprefix('?')
-
-                # message_response.l
-
                 """
                 sample openAI response object
 
@@ -301,14 +311,6 @@ class TextGPT:
                                    max_tokens, int(token_data["completion_tokens"]), int(token_data["prompt_tokens"]),
                                    int(token_data["total_tokens"]), user_hash, int(response["created"]), response_id,
                                    finish_reason, sender_hash]
-
-                # for x in database_dict:
-                #     print(x[0])
-                #     print(x[1])
-                #     print(type(x[1]))
-                #     print("#########################################")
-
-                #####################################################################################################################
 
                 self.create_database()
 
@@ -475,3 +477,12 @@ if __name__ == "__main__":
     # app.debug = False
     instance = TextGPT()
     instance.run()
+
+"""
+I wrote an application where users can send text messages and receive an automated response, also as a text message.
+
+The application is built but now I want to create a website. I would the website to have text message animation in the background showing different examples of the conversations people have had. For example, there will be a text message bubble that pops up (containing the user's question) and then another bubble will appear underneath the previous one (containing the response text) and both text bubbles will move up. I have also create two bubble images, one for the user and one for the program's response.
+
+How can I create this animation on my website?
+
+"""
