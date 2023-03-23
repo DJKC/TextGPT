@@ -19,7 +19,9 @@
 #     take advanced parameters in any order
 # make into a class
 # add image generation to database with url
-# if ngrok tunnel error, use 78 - 80 to stop excess tunnels
+# if ngrok tunnel error, use 86 - 88 to stop excess tunnels
+# Add text editing functionality
+#   https://platform.openai.com/docs/api-reference/edits/create
 
 # For tokenizing
 # Encoding name 	OpenAI models
@@ -103,12 +105,12 @@ class TextGPT:
 
         self.models = {"td3": "text-davinci-003",  # Large-scale text generation | high performance trained on internet text
                        "td2": "text-davinci-002",  # Large-scale text generation | balance between performance and cost-effectiveness
-                       "cd2": "code-davinci-002",  # Code generation and programming language understanding
+                       # "cd2": "code-davinci-002",  # Code generation and programming language understanding
                        "ta1": "text-ada-001",      # Text completion and answer generation  | trained on a diverse internet text and generating fluent human-like text
                        "ccc": "curie",             # Text generation and question answering | focused on knowledge-based and conversational tasks
                        "tc1": "text-curie-001",    # Text generation and language understanding | performs well on a wide range of natural language tasks
-                       "tb1": "text-babbage-001",  # Text generation and language modeling | more structured and technical text
-                       "cc1": "code-cushman-001"}  # Code generation and completion | Balance between performance and cost-effectiveness
+                       "tb1": "text-babbage-001"}  # Text generation and language modeling | more structured and technical text
+                       # "cc1": "code-cushman-001"}  # Code generation and completion | Balance between performance and cost-effectiveness
 
         @self.app.route("/sms", methods=['POST'])
         def handle_incoming():
