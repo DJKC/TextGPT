@@ -3,6 +3,7 @@
 # Clone the private Git repository using an access token
 ACCESS_TOKEN="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"
 
+# FOR HTTPS
 # REPO_URL="https://github.com/DJKC/TextGPT.git"
 REPO_URL="git@github.com:DJKC/TextGPT.git"
 LOCAL_DIR="/home/ec2-user/Desktop/TextGPT"
