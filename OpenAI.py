@@ -23,12 +23,6 @@
 # Add text editing functionality
 #   https://platform.openai.com/docs/api-reference/edits/create
 
-# For tokenizing
-# Encoding name 	OpenAI models
-# cl100k_base 	ChatGPT models, text-embedding-ada-002
-# p50k_base 	Code models, text-davinci-002, text-davinci-003
-# r50k_base (or gpt2) 	GPT-3 models like davinci
-
 import os
 import sys
 import json
@@ -38,10 +32,12 @@ import hashlib
 import logging
 import platform
 import requests
+import tiktoken
 import pyperclip
 from pyngrok import ngrok
 from twilio.rest import Client
 from flask import Flask, request
+from transformers import GPT2TokenizerFast
 
 
 class TextGPT:
@@ -84,12 +80,19 @@ class TextGPT:
         openai.api_key = self.get_config_key("OPENAI")  # OpenAI API key
 
         # Ngrok tunnel start
-        # ngrok.kill()
-        # ngrok.disconnect()
-
         ngrok.set_auth_token(self.get_config_key("NGROK"))
         ngrok_tunnel_url = ngrok.connect(5000).public_url
         print(f"Tunnel Created at {ngrok_tunnel_url}")
+
+        # The below won't work due to free tier limitation on number instances that can be actively run
+        # try:
+        #     ngrok_tunnel_url = ngrok.connect(5000).public_url
+        # except:
+        #     ngrok.kill()
+        #     ngrok.disconnect(ngrok_tunnel_url)
+        #     ngrok_tunnel_url = ngrok.connect(5000).public_url
+        # finally:
+        #     pass
 
         # Twilio account information
         self.from_number = self.get_config_key("TWILIO", False, "TWILIO_PHONE_NUMBER")  # Twilio phone number
@@ -102,15 +105,15 @@ class TextGPT:
         self.messaging_service = self.client.messaging.services(self.messaging_sid).fetch()
         self.messaging_service.update(inbound_request_url=ngrok_tunnel_url + "/sms", inbound_method="POST")
 
-
         self.models = {"td3": "text-davinci-003",  # Large-scale text generation | high performance trained on internet text
                        "td2": "text-davinci-002",  # Large-scale text generation | balance between performance and cost-effectiveness
-                       # "cd2": "code-davinci-002",  # Code generation and programming language understanding
+                       # "cd2": "code-davinci-002",  # Code generation and programming language understanding !!! Discontinued
                        "ta1": "text-ada-001",      # Text completion and answer generation  | trained on a diverse internet text and generating fluent human-like text
                        "ccc": "curie",             # Text generation and question answering | focused on knowledge-based and conversational tasks
                        "tc1": "text-curie-001",    # Text generation and language understanding | performs well on a wide range of natural language tasks
                        "tb1": "text-babbage-001"}  # Text generation and language modeling | more structured and technical text
-                       # "cc1": "code-cushman-001"}  # Code generation and completion | Balance between performance and cost-effectiveness
+                       # "cc1": "code-cushman-001"}  # Code generation and completion | Balance between performance and cost-effectiveness  !!! Discontinued
+
 
         @self.app.route("/sms", methods=['POST'])
         def handle_incoming():
@@ -174,12 +177,48 @@ class TextGPT:
                 pass
 
             if (question.startswith("!!")):
+                first_run = True
+
                 help_message = "::temp:max_tokens | @@ for image | !! for help"
 
                 response_message = self.client.messages.create(messaging_service_sid=self.messaging_sid,
                                                                body=help_message,
                                                                from_=self.from_number,
                                                                to=sender)
+
+                # user_prompt_general = {"role":  "user", "content": None}
+
+                prompt_message = {"role": "system", "content": "You are a very knowledgeable and helpful friend, many people will ask you for help and advice "
+                                                               "because you explain complicated concepts simply"}
+                user_next_prompt = {"role": "user", "content": question}
+
+                # message_log = [prompt_message, user_next_prompt]
+
+                if first_run:
+                    message_log = [prompt_message, user_next_prompt]
+
+                else:
+                    message_log += [user_next_prompt]
+
+                response = openai.ChatCompletion.create(model="gpt-3.5-turbo",  # models[model_set],
+                                                        max_tokens=10,
+                                                        messages=message_log
+                                                        )
+
+                assistant_response = dict(response.choices[0].message)
+                message_log += [assistant_response]
+
+                print(f'{model_set}: {assistant_response["content"]}\n\n')
+
+                for x in message_log:
+                    print(f'[{x["role"]}]')
+                    print(x["content"])
+                    print('*' * 10)
+
+                print('*' * 50)
+
+                first_run = False
+
 
                 return "sid"
 
@@ -331,6 +370,56 @@ class TextGPT:
                 conn.close()
 
                 return response_message.sid
+
+    def get_tokenID(word):
+        """
+        Gets the token id for string to be tokenized, used with the logit_bias parameter
+
+        :param word: Word to be tokenized
+        :return: Integers representing the token id
+        """
+
+        # https://huggingface.co/docs/transformers/model_doc/gpt2#transformers.GPT2TokenizerFast
+
+        tokenizer = GPT2TokenizerFast.from_pretrained("gpt2")
+        id = tokenizer(word)["input_ids"][0]
+
+        return id
+
+    def num_tokens_from_messages(messages, model="gpt-3.5-turbo"):
+        """
+        Returns the number of tokens used by a list of messages
+
+        :param messages: List of json objects containing the chat message log
+        :param model: the model being used for the conversation
+        :return: Number of tokens used by conversation
+        """
+
+        try:
+            encoding = tiktoken.encoding_for_model(model)
+        except KeyError:
+            encoding = tiktoken.get_encoding("cl100k_base")
+
+        if model == "gpt-3.5-turbo":  # note: future models may deviate from this
+            num_tokens = 0
+
+            for message in messages:
+                num_tokens += 4  # every message follows <im_start>{role/name}\n{content}<im_end>\n
+
+                for key, value in message.items():
+                    num_tokens += len(encoding.encode(value))
+
+                    if key == "name":  # if there's a name, the role is omitted
+                        num_tokens += -1  # role is always required and always 1 token
+
+            num_tokens += 2  # every reply is primed with <im_start>assistant
+
+            return num_tokens
+
+        else:
+            raise NotImplementedError(f"""num_tokens_from_messages() is not available for model {model}. See
+                                          https://github.com/openai/openai-python/blob/main/chatml.md for
+                                          information on how messages are converted to tokens.""")
 
     def get_config_key(self, _section_name=None, _secret_only=True, _key_name=None, _print=False):
         """
