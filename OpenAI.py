@@ -435,17 +435,20 @@ def handle_incoming():
 # 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
 # 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
 
-
 # OpenAI account information
 openai.api_key = get_config_key("OPENAI")  # OpenAI API key
 
 # Ngrok tunnel start
-# ngrok.kill()
-# ngrok.disconnect()
+ngrok.set_auth_token(self.get_config_key("NGROK"))
 
-ngrok.set_auth_token(get_config_key("NGROK"))
-ngrok_tunnel_url = ngrok.connect(5000).public_url
-print(f"Tunnel Created at {ngrok_tunnel_url}")
+try:
+    ngrok_tunnel_url = ngrok.connect(5000).public_url
+except:
+    ngrok.kill()
+    ngrok.disconnect()
+    ngrok_tunnel_url = ngrok.connect(5000).public_url
+finally:
+    print(f"Tunnel Created at {ngrok_tunnel_url}")
 
 # Twilio account information
 from_number   = get_config_key("TWILIO", False, "TWILIO_PHONE_NUMBER")  # Twilio phone number
