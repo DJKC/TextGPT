@@ -19,6 +19,7 @@
 #     take advanced parameters in any order
 # make into a class
 # add image generation to database with url
+# store database remotely so can be written to from various locations and instances
 
 import os
 import sys
