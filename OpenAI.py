@@ -440,15 +440,15 @@ openai.api_key = get_config_key("OPENAI")  # OpenAI API key
 
 # Ngrok tunnel start
 ngrok.set_auth_token(get_config_key("NGROK"))
+ngrok_tunnel_url = ngrok.connect(5000).public_url
+print(f"Tunnel Created at {ngrok_tunnel_url}")
 
-try:
-    ngrok_tunnel_url = ngrok.connect(5000).public_url
-except:
-    ngrok.kill()
-    ngrok.disconnect()
-    ngrok_tunnel_url = ngrok.connect(5000).public_url
-finally:
-    print(f"Tunnel Created at {ngrok_tunnel_url}")
+# In case of tunnel error, needs work as free version can't run separate instance.
+# try:
+#     ngrok.kill()
+#     ngrok.disconnect(ngrok_tunnel_url)
+# except:
+#     pass
 
 # Twilio account information
 from_number   = get_config_key("TWILIO", False, "TWILIO_PHONE_NUMBER")  # Twilio phone number
