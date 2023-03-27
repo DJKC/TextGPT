@@ -439,7 +439,7 @@ def handle_incoming():
 openai.api_key = get_config_key("OPENAI")  # OpenAI API key
 
 # Ngrok tunnel start
-ngrok.set_auth_token(self.get_config_key("NGROK"))
+ngrok.set_auth_token(get_config_key("NGROK"))
 
 try:
     ngrok_tunnel_url = ngrok.connect(5000).public_url
