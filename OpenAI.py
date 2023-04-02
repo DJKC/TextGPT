@@ -22,6 +22,8 @@
 # if ngrok tunnel error, use 86 - 88 to stop excess tunnels
 # Add text editing functionality
 #   https://platform.openai.com/docs/api-reference/edits/create
+# If error causes request not be sent, save request and send again successfully.
+# Prompt injection
 
 import os
 import sys
@@ -46,6 +48,8 @@ class TextGPT:
         # NOTSET, DEBUG, INFO, WARNING, ERROR, CRITICAL
         # logging.basicConfig(filename='log.txt', level=logging.DEBUG, filemode='w', format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
         self.app = Flask(__name__)
+        self.first_run = True
+        self.message_log = {}
 
         logging.basicConfig(level=logging.WARNING, filemode='w',
                             format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
@@ -127,6 +131,14 @@ class TextGPT:
             # Get message from Twilio request
             question = request.values.get('Body', None)
             sender = request.values.get('From', None)
+            user = request.values["From"]  # This should be hashed for privacy and security
+            user_hash = hashlib.sha256(user.encode()).hexdigest()
+            sender_hash = hashlib.sha256(sender.encode()).hexdigest()
+
+            # Extract temperature and max tokens from message, if they exist
+            temperature = 0.5
+            max_tokens = 200
+            model_set = "td3"
 
             # request.values.items()
             # {
@@ -154,15 +166,6 @@ class TextGPT:
 
             # print(f"Message: {message}\nSender: {sender}")
 
-            user = request.values["From"]  # This should be hashed for privacy and security
-            user_hash = hashlib.sha256(user.encode()).hexdigest()
-            sender_hash = hashlib.sha256(sender.encode()).hexdigest()
-
-            # Extract temperature and max tokens from message, if they exist
-            temperature = 0.5
-            max_tokens = 200
-            model_set = "td3"
-
             print("Message received from", request.values["From"])
 
             tapback_filters = ["Loved \"",
@@ -176,41 +179,46 @@ class TextGPT:
                 # Do not do anything
                 pass
 
-            if (question.startswith("!!")):
-                first_run = True
-
-                help_message = "::temp:max_tokens | @@ for image | !! for help"
+            if (question.startswith("$$")):
+                help_message = "::temp:max_tokens | @@ for image | $$ for help | !! for ChatGPT | Else TextDavinci3"
 
                 response_message = self.client.messages.create(messaging_service_sid=self.messaging_sid,
                                                                body=help_message,
                                                                from_=self.from_number,
                                                                to=sender)
 
+            if (question.startswith("!!")):
+                model_set = "gpt-3.5-turbo"
+
                 # user_prompt_general = {"role":  "user", "content": None}
 
                 prompt_message = {"role": "system", "content": "You are a very knowledgeable and helpful friend, many people will ask you for help and advice "
                                                                "because you explain complicated concepts simply"}
-                user_next_prompt = {"role": "user", "content": question}
+                user_next_prompt = {"role": "user", "content": question[2:]}
 
                 # message_log = [prompt_message, user_next_prompt]
 
-                if first_run:
-                    message_log = [prompt_message, user_next_prompt]
+                if self.first_run:
+                    self.message_log = [prompt_message, user_next_prompt]
+                    self.first_run = False
 
                 else:
-                    message_log += [user_next_prompt]
+                    if self.message_log is {}:
+                        print("Error with message log in post first run       ")
+                    else:
+                        self.message_log += [user_next_prompt]
 
-                response = openai.ChatCompletion.create(model="gpt-3.5-turbo",  # models[model_set],
-                                                        max_tokens=10,
-                                                        messages=message_log
+                response = openai.ChatCompletion.create(model=model_set,  # models[model_set],
+                                                        max_tokens=100,
+                                                        messages=self.message_log
                                                         )
 
                 assistant_response = dict(response.choices[0].message)
-                message_log += [assistant_response]
+                self.message_log += [assistant_response]
 
                 print(f'{model_set}: {assistant_response["content"]}\n\n')
 
-                for x in message_log:
+                for x in self.message_log:
                     print(f'[{x["role"]}]')
                     print(x["content"])
                     print('*' * 10)
@@ -218,6 +226,11 @@ class TextGPT:
                 print('*' * 50)
 
                 first_run = False
+
+                response_message = self.client.messages.create(messaging_service_sid=self.messaging_sid,
+                                                               body=assistant_response["content"],
+                                                               from_=self.from_number,
+                                                               to=sender)
 
 
                 return "sid"
@@ -268,11 +281,6 @@ class TextGPT:
                     pass
 
                 return "sid"
-            # ...
-
-            # elif "!!" in question:
-            #     # Ask ChatGPT
-            #     pass
 
             else:
                 if "::" in question:
@@ -386,6 +394,7 @@ class TextGPT:
 
         return id
 
+
     def num_tokens_from_messages(messages, model="gpt-3.5-turbo"):
         """
         Returns the number of tokens used by a list of messages
@@ -420,6 +429,7 @@ class TextGPT:
             raise NotImplementedError(f"""num_tokens_from_messages() is not available for model {model}. See
                                           https://github.com/openai/openai-python/blob/main/chatml.md for
                                           information on how messages are converted to tokens.""")
+
 
     def get_config_key(self, _section_name=None, _secret_only=True, _key_name=None, _print=False):
         """
@@ -544,6 +554,7 @@ class TextGPT:
         conn.commit()
         conn.close()
 
+
     def get_twilio_balance(self):
         sid = self.get_config_key("TWILIO", False, "SID")
         auth = self.get_config_key("TWILIO")
@@ -552,12 +563,14 @@ class TextGPT:
 
         return balance
 
+
     def run(self):
         """
 
         :return:
         """
         self.app.run()
+
 
 #from TextGPT import TextGPT
 
@@ -576,4 +589,33 @@ The application is built but now I want to create a website. I would the website
 
 How can I create this animation on my website?
 
+"""
+
+"""
+Message received from +19512339033
+0.5 | td3 | 200
+What is gpt-6?
+2023-03-27 09:25:56,498 - OpenAI - ERROR - Exception on /sms [POST]
+Traceback (most recent call last):
+  File "/home/ec2-user/.local/lib/python3.7/site-packages/flask/app.py", line 2525, in wsgi_app
+    response = self.full_dispatch_request()
+  File "/home/ec2-user/.local/lib/python3.7/site-packages/flask/app.py", line 1822, in full_dispatch_request
+    rv = self.handle_user_exception(e)
+  File "/home/ec2-user/.local/lib/python3.7/site-packages/flask/app.py", line 1820, in full_dispatch_request
+    rv = self.dispatch_request()
+  File "/home/ec2-user/.local/lib/python3.7/site-packages/flask/app.py", line 1796, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)
+  File "/home/ec2-user/Desktop/TextGPT/OpenAI.py", line 360, in handle_incoming
+    frequency_penalty=0)  # 0 and 2.0. Positive values penalize new tokens based on existing frequency in text, decreasing the model's likelihood to repeat the same line verbatim.
+  File "/home/ec2-user/.local/lib/python3.7/site-packages/openai/api_resources/completion.py", line 25, in create
+    return super().create(*args, **kwargs)
+  File "/home/ec2-user/.local/lib/python3.7/site-packages/openai/api_resources/abstract/engine_api_resource.py", line 160, in create
+    request_timeout=request_timeout,
+  File "/home/ec2-user/.local/lib/python3.7/site-packages/openai/api_requestor.py", line 227, in request
+    resp, got_stream = self._interpret_response(result, stream)
+  File "/home/ec2-user/.local/lib/python3.7/site-packages/openai/api_requestor.py", line 624, in _interpret_response
+    stream=False,
+  File "/home/ec2-user/.local/lib/python3.7/site-packages/openai/api_requestor.py", line 681, in _interpret_response_line
+    rbody, rcode, resp.data, rheaders, stream_error=stream_error
+openai.error.RateLimitError: The server had an error while processing your request. Sorry about that!
 """
