@@ -46,16 +46,28 @@ class TextGPT:
     def __init__(self):
         # Set up logging for pyngrok and twilio
         # NOTSET, DEBUG, INFO, WARNING, ERROR, CRITICAL
-        # logging.basicConfig(filename='log.txt', level=logging.DEBUG, filemode='w', format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-        self.app = Flask(__name__)
-        self.first_run = True
+        self.log_file    = False
+        self.app         = Flask(__name__)
+        self.first_run   = True
         self.message_log = {}
+        self.log_level   = [
+                            logging.NOTSET,  # 0
+                            logging.DEBUG,   # 1
+                            logging.INFO,    # 2
+                            logging.WARNING, # 3
+                            logging.ERROR,   # 4
+                            logging.CRITICAL # 5
+                           ][0]
 
-        logging.basicConfig(level=logging.WARNING, filemode='w',
-                            format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-        logging.getLogger("pyngrok").setLevel(logging.WARNING)
-        logging.getLogger("twilio").setLevel(logging.WARNING)
-        logging.getLogger("openai").setLevel(logging.WARNING)
+        if self.log_file:
+            logging.basicConfig(filename='log.txt', level=logging.DEBUG, filemode='w', format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+        else:
+            logging.basicConfig(level=self.log_level, filemode='w',
+                                format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+
+        logging.getLogger("pyngrok").setLevel(self.log_level)
+        logging.getLogger("twilio").setLevel(self.log_level)
+        logging.getLogger("openai").setLevel(self.log_level)
 
         # Redirect stderr to the log file
         # sys.stderr = open('log.txt', 'w')
@@ -180,7 +192,7 @@ class TextGPT:
                 pass
 
             if (question.startswith("$$")):
-                help_message = "::temp:max_tokens | @@ for image | $$ for help | !! for ChatGPT | Else TextDavinci3"
+                help_message = "::temp:max_tokens | @@ for image | $$ for help | !! for ChatGPT | Else TextDavinci3u1"
 
                 response_message = self.client.messages.create(messaging_service_sid=self.messaging_sid,
                                                                body=help_message,
