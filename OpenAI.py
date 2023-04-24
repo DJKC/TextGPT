@@ -12,14 +12,12 @@
 # https://platform.openai.com/tokenizer?view=bpe
 # https://platform.openai.com/docs/api-reference/images/create
 
-
-# TO-DO
+# TODO
+# set variable types in function header
 # If an invalid model is processed in line 294, no text messages is sent the user, set q default
 # 253
 #     take advanced parameters in any order
-# make into a class
 # add image generation to database with url
-# if ngrok tunnel error, use 86 - 88 to stop excess tunnels
 # Add text editing functionality
 #   https://platform.openai.com/docs/api-reference/edits/create
 # If error causes request not be sent, save request and send again successfully.
@@ -46,29 +44,35 @@ class TextGPT:
     def __init__(self):
         # Set up logging for pyngrok and twilio
         # NOTSET, DEBUG, INFO, WARNING, ERROR, CRITICAL
-        self.log_file    = False
+        self.log_to_file    = False
         self.app         = Flask(__name__)
         self.first_run   = True
-        self.message_log = {}
-        self.log_level   = [
-                            logging.NOTSET,  # 0
-                            logging.DEBUG,   # 1
-                            logging.INFO,    # 2
-                            logging.WARNING, # 3
-                            logging.ERROR,   # 4
-                            logging.CRITICAL # 5
-                           ][0]
+        # self.message_log = {}
+        self.log_level = 0
+        self.log_levels   = [
+                             logging.NOTSET,  # 0
+                             logging.DEBUG,   # 1
+                             logging.INFO,    # 2
+                             logging.WARNING, # 3
+                             logging.ERROR,   # 4
+                             logging.CRITICAL # 5
+                            ][0]  # Set as 0 element by default
 
-        if self.log_file:
+        # TODO - # Write to file and console
+        # TODO - Name log file as timestamp and make folder to store multiple log files
+        if self.log_to_file:
+            #  Log to file
             logging.basicConfig(filename='log.txt', level=logging.DEBUG, filemode='w', format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
         else:
-            logging.basicConfig(level=self.log_level, filemode='w',
+            #  Log to screen
+            logging.basicConfig(level=self.log_levels, filemode='w',
                                 format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
-        logging.getLogger("pyngrok").setLevel(self.log_level)
-        logging.getLogger("twilio").setLevel(self.log_level)
-        logging.getLogger("openai").setLevel(self.log_level)
+        logging.getLogger("pyngrok").setLevel(self.log_levels)
+        logging.getLogger("twilio").setLevel(self.log_levels)
+        logging.getLogger("openai").setLevel(self.log_levels)
 
+        # TODO - What is this for, is this called for any error or exception?
         # Redirect stderr to the log file
         # sys.stderr = open('log.txt', 'w')
 
@@ -101,6 +105,7 @@ class TextGPT:
         print(f"Tunnel Created at {ngrok_tunnel_url}")
 
         # The below won't work due to free tier limitation on number instances that can be actively run
+        # TODO - is there a way to cancel active tunnels?
         # try:
         #     ngrok_tunnel_url = ngrok.connect(5000).public_url
         # except:
@@ -111,24 +116,22 @@ class TextGPT:
         #     pass
 
         # Twilio account information
-        self.from_number = self.get_config_key("TWILIO", False, "TWILIO_PHONE_NUMBER")  # Twilio phone number
+        self.from_number   = self.get_config_key("TWILIO", False, "TWILIO_PHONE_NUMBER")  # Twilio phone number
         self.messaging_sid = self.get_config_key("TWILIO", False, "MESSAGING_SID")
-        auth_token = self.get_config_key("TWILIO", False, "SECRET")
-        account_sid = self.get_config_key("TWILIO", False, "SID")
+        auth_token         = self.get_config_key("TWILIO", False, "SECRET")
+        account_sid        = self.get_config_key("TWILIO", False, "SID")
 
         self.client = Client(account_sid, auth_token)
 
         self.messaging_service = self.client.messaging.services(self.messaging_sid).fetch()
-        self.messaging_service.update(inbound_request_url=ngrok_tunnel_url + "/sms", inbound_method="POST")
+        self.messaging_service.update(inbound_request_url = ngrok_tunnel_url + "/sms", inbound_method="POST")
 
         self.models = {"td3": "text-davinci-003",  # Large-scale text generation | high performance trained on internet text
                        "td2": "text-davinci-002",  # Large-scale text generation | balance between performance and cost-effectiveness
-                       # "cd2": "code-davinci-002",  # Code generation and programming language understanding !!! Discontinued
                        "ta1": "text-ada-001",      # Text completion and answer generation  | trained on a diverse internet text and generating fluent human-like text
                        "ccc": "curie",             # Text generation and question answering | focused on knowledge-based and conversational tasks
                        "tc1": "text-curie-001",    # Text generation and language understanding | performs well on a wide range of natural language tasks
                        "tb1": "text-babbage-001"}  # Text generation and language modeling | more structured and technical text
-                       # "cc1": "code-cushman-001"}  # Code generation and completion | Balance between performance and cost-effectiveness  !!! Discontinued
 
 
         @self.app.route("/sms", methods=['POST'])
@@ -136,21 +139,21 @@ class TextGPT:
             """
             User text messages received from Twilio are routed to Text-Davinci-003 and response is sent back to user
 
-            # :param request: The question to be asked of OpenAI model
+            :param request: The question to be asked of OpenAI model
             :return: The message.sid value
             """
 
             # Get message from Twilio request
-            question = request.values.get('Body', None)
-            sender = request.values.get('From', None)
-            user = request.values["From"]  # This should be hashed for privacy and security
-            user_hash = hashlib.sha256(user.encode()).hexdigest()
+            question    = request.values.get('Body', None)
+            sender      = request.values.get('From', None)
+            user        = request.values["From"]  # This should be hashed for privacy and security
+            user_hash   = hashlib.sha256(user.encode()).hexdigest()
             sender_hash = hashlib.sha256(sender.encode()).hexdigest()
 
             # Extract temperature and max tokens from message, if they exist
             temperature = 0.5
-            max_tokens = 200
-            model_set = "td3"
+            max_tokens  = 200
+            model_set   = "td3"
 
             # request.values.items()
             # {
@@ -188,10 +191,11 @@ class TextGPT:
                                "Questioned \"", ]
 
             for tapback in tapback_filters:
-                # Do not do anything
+                # TODO - check if tapbacks in var question
                 pass
 
-            if (question.startswith("$$")):
+            # Display help message
+            if(question.startswith("$$")):
                 help_message = "::temp:max_tokens | @@ for image | $$ for help | !! for ChatGPT | Else TextDavinci3u1"
 
                 response_message = self.client.messages.create(messaging_service_sid=self.messaging_sid,
@@ -199,6 +203,7 @@ class TextGPT:
                                                                from_=self.from_number,
                                                                to=sender)
 
+            # Pass to ChatGPT
             if (question.startswith("!!")):
                 model_set = "gpt-3.5-turbo"
 
@@ -247,6 +252,7 @@ class TextGPT:
 
                 return "sid"
 
+            # Pass to DALL-E
             if "@@" in question:
                 import requests
 
@@ -294,6 +300,7 @@ class TextGPT:
 
                 return "sid"
 
+            # Pass to selected Model
             else:
                 if "::" in question:
                     params = question.split("::")[1]
@@ -318,61 +325,79 @@ class TextGPT:
                 print(f"{temperature} | {model_set} | {max_tokens}")
 
                 print(question)
+
                 # Send message to OpenAI API
-                response = openai.Completion.create(n=1,  # How many completions to generate for each prompt.
-                                                    user=user_hash,  # string representing a user
-                                                    stop=None,  #
-                                                    top_p=1,
-                                                    # 0.1 means only the tokens comprising the top 10% probability mass are considered.
-                                                    prompt=question,  #
-                                                    engine=self.models[model_set],  #
-                                                    max_tokens=max_tokens,
-                                                    # The maximum number of tokens to generate in the completion
-                                                    temperature=temperature,
-                                                    # Higher values, more risks. 1 very dynamic, 0 for well-defined static
-                                                    presence_penalty=0,
+                response = openai.Completion.create(n           = 1,  # How many completions to generate for each prompt.
+                                                    user        = user_hash,  # string representing a user
+                                                    stop        = None,  #
+                                                    top_p       = 1, # 0.1 means only the tokens comprising the top 10% probability mass are considered.
+                                                    prompt      = question,  #
+                                                    engine      = self.models[model_set],  #
+                                                    max_tokens  = max_tokens, # The maximum number of tokens to generate in the completion
+                                                    temperature = temperature, # Higher values, more risks. 1 very dynamic, 0 for well-defined static
+                                                    presence_penalty = 0,
                                                     # 0 and 2.0. Positive values penalize new tokens based on whether they appear in the text, increasing the model's likelihood to talk about new topics.
-                                                    frequency_penalty=0)  # 0 and 2.0. Positive values penalize new tokens based on existing frequency in text, decreasing the model's likelihood to repeat the same line verbatim.
+                                                    frequency_penalty = 0)  # 0 and 2.0. Positive values penalize new tokens based on existing frequency in text, decreasing the model's likelihood to repeat the same line verbatim.
 
                 # Get the message response
-                try:  # for 3.9
+                # TODO - AWS Python installation make use 3.7 due to way I installed 3.9 (locally in desktop folder)
+                try:  # for Python 3.9
                     message_response = response["choices"][0]["text"].removeprefix('?').lstrip()  # + f"[{params}]"
-                except:  # for 3.7
+                except:  # for Python 3.7
                     message_response = response["choices"][0]["text"].lstrip('?').lstrip()  # + f"[{params}]"
 
-                """
-                sample openAI response object
 
-                {'choices': [{'finish_reason': 'length',
+                # Sample openAI response object
+                """
+                {
+                 'choices': [
+                             {
+                              'finish_reason': 'length',
                               'index': 0,
                               'logprobs': None,
-                              'text': 'Blah blah blah'}],
+                              'text': 'Blah blah blah'
+                             }
+                            ],
                  'created': 1675849159,
                  'id'     : 'cmpl-6hbD5CbVwYJsWMFNBs0gAj7IWSCLV',
                  'model'  : 'text-davinci-003',
                  'object' : 'text_completion',
-                 'usage'  : {'completion_tokens': 40,
+                 'usage'  : {
+                             'completion_tokens': 40,
                              'prompt_tokens': 2,
-                             'total_tokens': 42}}
+                             'total_tokens': 42
+                             }
+                }
                 """
 
                 # Send response back to user's phone number via Twilio
-                response_message = self.client.messages.create(messaging_service_sid=self.messaging_sid,
-                                                               body=message_response,
-                                                               from_=self.from_number,
-                                                               to=sender)
+                response_message = self.client.messages.create(messaging_service_sid = self.messaging_sid,
+                                                               body  = message_response,
+                                                               from_ = self.from_number,
+                                                               to    = sender)
 
                 # Extract data from response object
                 finish_reason = response['choices'][0]['finish_reason']
-                response_id = response['id']
-                token_data = response["usage"]
+                response_id   = response['id']
+                token_data    = response["usage"]
 
                 # Insert these values into db: user_id, prompt, response, temperature, max_tokens, timestamp, model, finish_reason, sender, id
-                database_values = [question, message_response, temperature, response["model"],
-                                   max_tokens, int(token_data["completion_tokens"]), int(token_data["prompt_tokens"]),
-                                   int(token_data["total_tokens"]), user_hash, int(response["created"]), response_id,
-                                   finish_reason, sender_hash]
+                database_values = [
+                                   question,
+                                   message_response,
+                                   temperature,
+                                   response["model"],
+                                   max_tokens,
+                                   int(token_data["completion_tokens"]),
+                                   int(token_data["prompt_tokens"]),
+                                   int(token_data["total_tokens"]),
+                                   user_hash, int(response["created"]),
+                                   response_id,
+                                   finish_reason,
+                                   sender_hash
+                                  ]
 
+                # TODO -
                 self.create_database()
 
                 # Connect to the database file or create it if it doesn't exist
@@ -407,7 +432,7 @@ class TextGPT:
         return id
 
 
-    def num_tokens_from_messages(messages, model="gpt-3.5-turbo"):
+    def num_tokens_from_messages(_messages: dict, model = "gpt-3.5-turbo" ):
         """
         Returns the number of tokens used by a list of messages
 
@@ -424,7 +449,7 @@ class TextGPT:
         if model == "gpt-3.5-turbo":  # note: future models may deviate from this
             num_tokens = 0
 
-            for message in messages:
+            for message in _messages:
                 num_tokens += 4  # every message follows <im_start>{role/name}\n{content}<im_end>\n
 
                 for key, value in message.items():
@@ -532,19 +557,19 @@ class TextGPT:
 
         table_name = "responses"
 
-        column1 = ("question", "TEXT")
-        column2 = ("message_response", "TEXT")
-        column3 = ("temperature", "REAL")
-        column4 = ("model", "TEXT")
-        column5 = ("max_tokens", "INTEGER")
-        column6 = ("completion_tokens", "INTEGER")
-        column7 = ("prompt_tokens", "INTEGER")
-        column8 = ("total_tokens", "INTEGER")
-        column9 = ("user_hash", "TEXT")
-        column10 = ("timestamp", "INTEGER")
-        column11 = ("response_id", "TEXT")
-        column12 = ("finish_reason", "TEXT")
-        column13 = ("sender_hash", "TEXT")
+        column1  = ("question",          "TEXT")
+        column2  = ("message_response",  "TEXT")
+        column3  = ("temperature",       "REAL")
+        column4  = ("model",             "TEXT")
+        column5  = ("max_tokens",        "INTEGER")
+        column6  = ("completion_tokens", "INTEGER")
+        column7  = ("prompt_tokens",     "INTEGER")
+        column8  = ("total_tokens",      "INTEGER")
+        column9  = ("user_hash",         "TEXT")
+        column10 = ("timestamp",         "INTEGER")
+        column11 = ("response_id",       "TEXT")
+        column12 = ("finish_reason",     "TEXT")
+        column13 = ("sender_hash",       "TEXT")
 
         # Create the "responses" table if it doesn't exist
         cursor.execute(f'''CREATE TABLE IF NOT EXISTS {table_name}(
@@ -584,14 +609,12 @@ class TextGPT:
         self.app.run()
 
 
-#from TextGPT import TextGPT
-
 if __name__ == "__main__":
     # Start the Flask App
 
     # Setting this to True makes Ngrok use more than one tunnel and breaks free version
     # app.debug = False
-    instance = TextGPT()
+    instance = TextGPT
     instance.run()
 
 """
