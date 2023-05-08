@@ -26,6 +26,7 @@
 import os
 import sys
 import json
+import time
 import openai
 import sqlite3
 import hashlib
@@ -59,13 +60,26 @@ class TextGPT:
                             ][0]  # Set as 0 element by default
 
         # TODO - # Write to file and console
-        # TODO - Name log file as timestamp and make folder to store multiple log files
+        # https://stackoverflow.com/questions/11325019/how-to-output-to-the-console-and-file
+        # https://docs.python.org/2/howto/logging-cookbook.html
+
+        current_time_log_file = time.strftime("%I.%M.%S.%p_standard_log.log")
+        current_date_folder   = f'{time.strftime("%m-%d-%y")}'
+        # current_log_file_path = current_date_folder + current_time_log_file
+
+        standard_logs = f"log_files/{current_date_folder}/standard_logs/"
+        error_logs    = f"log_files/{current_date_folder}/error_logs/"
+
+        os.makedirs(standard_logs, exist_ok=True)
+        os.makedirs(error_logs, exist_ok=True)
+
         if self.log_to_file:
             #  Log to file
-            logging.basicConfig(filename='log.txt', level=logging.DEBUG, filemode='w', format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+            logging.basicConfig(filename=standard_logs + current_time_log_file, level=logging.DEBUG, filemode='a',
+                                format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
         else:
             #  Log to screen
-            logging.basicConfig(level=self.log_levels, filemode='w',
+            logging.basicConfig(level=self.log_levels, filemode='a',
                                 format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
         logging.getLogger("pyngrok").setLevel(self.log_levels)
@@ -73,6 +87,7 @@ class TextGPT:
         logging.getLogger("openai").setLevel(self.log_levels)
 
         # TODO - What is this for, is this called for any error or exception?
+        # TODO - Check error log for errors at startup
         # Redirect stderr to the log file
         # sys.stderr = open('log.txt', 'w')
 
@@ -191,47 +206,50 @@ class TextGPT:
                                "Questioned \"", ]
 
             for tapback in tapback_filters:
-                # TODO - check if tapbacks in var question
-                pass
+                # TODO - do not process message with chatbot
+                if tapback in question:
+                    pass
 
             # Display help message
             if(question.startswith("$$")):
                 help_message = "::temp:max_tokens | @@ for image | $$ for help | !! for ChatGPT | Else TextDavinci3u1"
 
-                response_message = self.client.messages.create(messaging_service_sid=self.messaging_sid,
-                                                               body=help_message,
-                                                               from_=self.from_number,
-                                                               to=sender)
+                response_message = self.client.messages.create(messaging_service_sid = self.messaging_sid,
+                                                               body                  = help_message,
+                                                               from_                 = self.from_number,
+                                                               to                    = sender)
 
             # Pass to ChatGPT
             if (question.startswith("!!")):
+                question = question[2:]
+
                 model_set = "gpt-3.5-turbo"
 
                 # user_prompt_general = {"role":  "user", "content": None}
 
-                prompt_message = {"role": "system", "content": "You are a very knowledgeable and helpful friend, many people will ask you for help and advice "
-                                                               "because you explain complicated concepts simply"}
-                user_next_prompt = {"role": "user", "content": question[2:]}
+                prompt_message   = {"role": "system", "content": "You are a very knowledgeable and helpful friend, many people will ask you for help and advice "
+                                                                 "because you explain complicated concepts simply"}
+                user_next_prompt = {"role": "user", "content": question}
 
                 # message_log = [prompt_message, user_next_prompt]
 
                 if self.first_run:
                     self.message_log = [prompt_message, user_next_prompt]
-                    self.first_run = False
+                    self.first_run   = False
 
                 else:
                     if self.message_log is {}:
-                        print("Error with message log in post first run       ")
+                        print("Error with message log in post first run")
                     else:
                         self.message_log += [user_next_prompt]
 
-                response = openai.ChatCompletion.create(model=model_set,  # models[model_set],
-                                                        max_tokens=100,
-                                                        messages=self.message_log
+                response = openai.ChatCompletion.create(model      = model_set,  # models[model_set],
+                                                        max_tokens = 100,
+                                                        messages   = self.message_log
                                                         )
 
                 assistant_response = dict(response.choices[0].message)
-                self.message_log += [assistant_response]
+                self.message_log  += [assistant_response]
 
                 print(f'{model_set}: {assistant_response["content"]}\n\n')
 
@@ -244,11 +262,10 @@ class TextGPT:
 
                 first_run = False
 
-                response_message = self.client.messages.create(messaging_service_sid=self.messaging_sid,
-                                                               body=assistant_response["content"],
-                                                               from_=self.from_number,
-                                                               to=sender)
-
+                response_message = self.client.messages.create(messaging_service_sid = self.messaging_sid,
+                                                               body                  = assistant_response["content"],
+                                                               from_                 = self.from_number,
+                                                               to                    = sender)
 
                 return "sid"
 
@@ -256,7 +273,7 @@ class TextGPT:
             if "@@" in question:
                 import requests
 
-                question = question.replace("@@", "")
+                question = question[2:]
 
                 ##########################################################################################################
 
@@ -268,13 +285,13 @@ class TextGPT:
 
                 # Define the headers to send with the API request
                 headers = {
-                    "Content-Type": "application/json",
+                    "Content-Type" : "application/json",
                     "Authorization": f"Bearer {openai.api_key}"
                 }
 
                 # Define the data to send with the API request
                 data = {
-                    "model": "image-alpha-001",
+                    "model" : "image-alpha-001",
                     "prompt": description
                 }
 
@@ -290,26 +307,26 @@ class TextGPT:
 
                     ##########################################################################################################
 
-                    response_message = self.client.messages.create(messaging_service_sid=self.messaging_sid,
-                                                                   body=image_url,
-                                                                   from_=self.from_number,
-                                                                   to=sender)
+                    response_message = self.client.messages.create(messaging_service_sid = self.messaging_sid,
+                                                                   body  = image_url,
+                                                                   from_ = self.from_number,
+                                                                   to    = sender)
 
                 else:
                     pass
 
                 return "sid"
 
-            # Pass to selected Model
+            # Use the model passed in with the question parameter
             else:
                 if "::" in question:
-                    params = question.split("::")[1]
+                    params   = question.split("::")[1]
                     question = question.split("::")[0]
 
                     if ' ' in params:
                         params = params.replace(' ', '')
 
-                    parameters = params.split(":")
+                    parameters  = params.split(":")
                     temperature = float(parameters[0])
 
                     try:
@@ -318,9 +335,9 @@ class TextGPT:
                         try:
                             max_tokens = int(parameters[2])
                         except:
-                            print("No third parameter")
+                            print(f"No third parameter received, max_tokens defaulted to {max_tokens}")
                     except:
-                        print("No second parameter")
+                        print(f"No second parameter received, model_set set to {model_set}")
 
                 print(f"{temperature} | {model_set} | {max_tokens}")
 
@@ -332,12 +349,11 @@ class TextGPT:
                                                     stop        = None,  #
                                                     top_p       = 1, # 0.1 means only the tokens comprising the top 10% probability mass are considered.
                                                     prompt      = question,  #
-                                                    engine      = self.models[model_set],  #
+                                                    engine      = self.models[model_set],
                                                     max_tokens  = max_tokens, # The maximum number of tokens to generate in the completion
                                                     temperature = temperature, # Higher values, more risks. 1 very dynamic, 0 for well-defined static
-                                                    presence_penalty = 0,
-                                                    # 0 and 2.0. Positive values penalize new tokens based on whether they appear in the text, increasing the model's likelihood to talk about new topics.
-                                                    frequency_penalty = 0)  # 0 and 2.0. Positive values penalize new tokens based on existing frequency in text, decreasing the model's likelihood to repeat the same line verbatim.
+                                                    presence_penalty  = 0,  # 0 -> 2.0. Positive values penalize new tokens if they already exists, increases talk about new topics.
+                                                    frequency_penalty = 0)  # 0 -> 2.0. Positive values penalize new tokens based on existing frequency, decreases chance to repeat the same line.
 
                 # Get the message response
                 # TODO - AWS Python installation make use 3.7 due to way I installed 3.9 (locally in desktop folder)
@@ -397,7 +413,7 @@ class TextGPT:
                                    sender_hash
                                   ]
 
-                # TODO -
+                # TODO - Have an updated copy of the database online
                 self.create_database()
 
                 # Connect to the database file or create it if it doesn't exist
@@ -427,7 +443,7 @@ class TextGPT:
         # https://huggingface.co/docs/transformers/model_doc/gpt2#transformers.GPT2TokenizerFast
 
         tokenizer = GPT2TokenizerFast.from_pretrained("gpt2")
-        id = tokenizer(word)["input_ids"][0]
+        id        = tokenizer(word)["input_ids"][0]
 
         return id
 
@@ -468,7 +484,7 @@ class TextGPT:
                                           information on how messages are converted to tokens.""")
 
 
-    def get_config_key(self, _section_name=None, _secret_only=True, _key_name=None, _print=False):
+    def get_config_key(self, _section_name = None, _secret_only = True, _key_name = None, _print = False):
         """
         Return the secret corresponding to the section selected
 
@@ -593,10 +609,10 @@ class TextGPT:
 
 
     def get_twilio_balance(self):
-        sid = self.get_config_key("TWILIO", False, "SID")
+        sid  = self.get_config_key("TWILIO", False, "SID")
         auth = self.get_config_key("TWILIO")
-        url = f"https://api.twilio.com/2010-04-01/Accounts/{sid}/Balance.json"
-        balance = json.loads(requests.get(url, auth=(sid, auth)).content)["balance"]
+        url  = f"https://api.twilio.com/2010-04-01/Accounts/{sid}/Balance.json"
+        balance = json.loads(requests.get(url, auth = (sid, auth)).content)["balance"]
 
         return balance
 
@@ -614,7 +630,7 @@ if __name__ == "__main__":
 
     # Setting this to True makes Ngrok use more than one tunnel and breaks free version
     # app.debug = False
-    instance = TextGPT
+    instance = TextGPT()
     instance.run()
 
 """
